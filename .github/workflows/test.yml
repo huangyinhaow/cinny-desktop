@@ -44,6 +44,7 @@ jobs:
       uses: tauri-apps/tauri-action@v0.3.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NODE_OPTIONS: "--max_old_space_size=4096"
       if: matrix.platform == 'windows-latest'
       with:
         args: --target aarch64-pc-windows-msvc --bundle nsis
