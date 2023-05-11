@@ -64,6 +64,71 @@ jobs:
             src-tauri\target\release\bundle\msi\Cinny_desktop-x86_64.msi.zip
             src-tauri\target\release\bundle\msi\Cinny_desktop-x86_64.msi.zip.sig
 
+  windows-arm64:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3.3.0
+        with: 
+          submodules: true
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@74c3d60f5a28f358ccf241a00c9021ea16f0569f
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup node
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: 18.12.1
+          cache: 'npm'
+      - name: Install Rust stable
+        uses: actions-rs/toolchain@v1.0.7
+        with:
+          toolchain: stable
+      - name: Install additional build tools
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64_arm64
+      - name: Add Rust target aarch64-pc-windows-msvc
+        run: rustup target add aarch64-pc-windows-msvc
+      - name: Install cinny dependencies
+        run: cd cinny && npm ci
+      - name: Install tauri dependencies
+        run: npm ci
+      - name: Build desktop app with Tauri
+        uses: tauri-apps/tauri-action@v0.3.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          NODE_OPTIONS: "--max_old_space_size=4096"
+        with:
+          releaseId: ${{ steps.get_release.outputs.upload_url }}
+      - name: Get app version (windows)
+        run: |
+          $json = (Get-Content "src-tauri\tauri.conf.json" -Raw) | ConvertFrom-Json
+          $version = $json.package.version
+          echo "Version: ${version}"
+          echo "TAURI_VERSION=${version}" >> $Env:GITHUB_ENV
+          echo "${Env:TAURI_VERSION}"
+        shell: pwsh
+      - name: Move msi
+        run: Move-Item "src-tauri\target\release\bundle\msi\Cinny_${{ env.TAURI_VERSION }}_*_en-US.msi" "src-tauri\target\release\bundle\msi\Cinny_desktop-x86_64.msi"
+        shell: pwsh
+      - name: Move msi.zip
+        run: Move-Item "src-tauri\target\release\bundle\msi\Cinny_${{ env.TAURI_VERSION }}_*_en-US.msi.zip" "src-tauri\target\release\bundle\msi\Cinny_desktop-x86_64.msi.zip"
+        shell: pwsh
+      - name: Move msi.zip.sig
+        run: Move-Item "src-tauri\target\release\bundle\msi\Cinny_${{ env.TAURI_VERSION }}_*_en-US.msi.zip.sig" "src-tauri\target\release\bundle\msi\Cinny_desktop-x86_64.msi.zip.sig"
+        shell: pwsh
+      - name: Upload tagged release
+        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
+        with:
+          files: |
+            src-tauri\target\release\bundle\msi\Cinny_desktop-*.msi
+            src-tauri\target\release\bundle\msi\Cinny_desktop-*.msi.zip
+            src-tauri\target\release\bundle\msi\Cinny_desktop-*.msi.zip.sig     
+
   # Linux-x86_64
   linux-x86_64:
     # ubuntu-latest 22.04 is too recent for Rust apps.
@@ -123,7 +188,7 @@ jobs:
             src-tauri/target/release/bundle/appimage/Cinny_desktop-x86_64.AppImage
             src-tauri/target/release/bundle/appimage/Cinny_desktop-x86_64.AppImage.tar.gz
             src-tauri/target/release/bundle/appimage/Cinny_desktop-x86_64.AppImage.tar.gz.sig
-
+    
   # macos-x86_64
   macos-x86_64:
     runs-on: macos-latest
