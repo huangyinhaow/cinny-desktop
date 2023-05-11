@@ -1,7 +1,8 @@
 name: "Build pull request"
 on:
-  #pull_request:
-    #types: ['opened', 'synchronize']
+  pull_request:
+    types: ['opened', 'synchronize']
+  workflow_dispatch:
 
 jobs:
   publish-tauri:
@@ -9,7 +10,6 @@ jobs:
       fail-fast: false
       matrix:
         platform: [macos-latest, ubuntu-20.04, windows-latest]
-        arch: 
 
     runs-on: ${{ matrix.platform }}
     steps:
