@@ -10,6 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         platform: [macos-latest, ubuntu-20.04, windows-latest]
+        arch: 
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -39,12 +40,11 @@ jobs:
       uses: tauri-apps/tauri-action@v0.3.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - if: matrix.platform == 'windows-latest'
-      name: Build desktop app with Tauri
+    - name: Build desktop app with Tauri
       uses: tauri-apps/tauri-action@v0.3.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: matrix.platform == 'windows-latest'
       with:
         args: --target aarch64-pc-windows-msvc --bundle nsis
-
         
